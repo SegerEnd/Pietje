@@ -51,8 +51,11 @@ function generateOutfit() {
         // Step 3: Apply color with multiply mode on the off-screen canvas
         offscreenCtx.globalCompositeOperation = 'multiply';
 
-        if (part === 'color_maillot') {
+        // when part is color_maillot, or color_skin, clamp the color to a minimum value for better visibility
+        if (['color_maillot', 'color_skin'].includes(part)) {
             color = clampColor(color);
+        } else if (part === 'color_hair') {
+            color = clampColor(color, 12);
         }
         offscreenCtx.fillStyle = color;
         offscreenCtx.fillRect(0, 0, offscreenCanvas.width, offscreenCanvas.height);
@@ -66,48 +69,52 @@ function generateOutfit() {
         ctx.drawImage(offscreenCanvas, 0, 0);
     }
 
-    // Load skin parts and draw only after all are loaded
-    var imagesLoaded = 0;
+    function loadImage(part) {
+        return new Promise((resolve, reject) => {
+            var img = new Image();
+            img.src = 'layers/' + part + '.png';
+            img.onload = function() {
+                // Fetch color and return the image, color, and part as an object
+                let color;
+                try {
+                    color = document.getElementById(part).value;
+                } catch (error) {
+                    color = '#ffffff'; // Default color when no input is found
+                }
+                resolve({ img, color, part });
+            };
+            img.onerror = function() {
+                console.error("Failed to load image:", img.src);
+                reject(img.src); // Reject the promise if loading fails
+            };
+        });
+    }
 
-    skinParts.forEach(function(part) {
-        var img = new Image();
-        img.src = 'layers/' + part + '.png';
-        
-        img.onload = function() {
-            try {
-                var color = document.getElementById(part).value;
-            }
-            catch (error) {
-                var color = '#ffffff';
-            }
-
-            drawLayeredImage(img, color, part);
-            
-            // Increment count and check if all images are loaded
-            imagesLoaded++;
-            
-            if (imagesLoaded === skinParts.length) {
-                // All images have loaded, update the texture
-                texture.src = mainCanvas.toDataURL();
-                reloadSkin();
-            }
-        };
-        
-        img.onerror = function() {
-            console.error("Failed to load image:", img.src);
-        };
-    });
+    // Load all images, then draw them in sequence
+    Promise.all(skinParts.map(part => loadImage(part)))
+        .then(images => {
+            // All images are loaded, now draw them in the specified order
+            images.forEach(({ img, color, part }) => {
+                drawLayeredImage(img, color, part);
+            });
+            // Update the texture after all layers are drawn
+            texture.src = mainCanvas.toDataURL();
+            reloadSkin();
+        })
+        .catch(error => {
+            console.error("An error occurred while loading images:", error);
+        });
 }
 
 // Clamp the color to a minimum value for better visibility
-function clampColor(color) {
+function clampColor(color, min = 5) {
     // Convert hex color to RGB components
     let r = parseInt(color.slice(1, 3), 16);
     let g = parseInt(color.slice(3, 5), 16);
     let b = parseInt(color.slice(5, 7), 16);
 
-    if (r < 5 && g < 5 && b < 5) {
-        return '#050505';
+    if (r < min && g < min && b < min) {
+        return `#${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}`;
     }
 
     // Convert back to hex format
