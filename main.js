@@ -5,11 +5,50 @@ function reloadSkin() {
     document.documentElement.style.setProperty('--skin', 'url(' + texture.src + ')');
 }
 
+function applyURLValuesToInputs() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // Attempt to apply URL parameter values to inputs
+    try {
+        // For each URL parameter, set the matching input value if it exists
+        urlParams.forEach((value, key) => {
+            const input = document.getElementById(key); // Find input by ID
+            if (input) {
+                input.value = value; // Set the input's value to the parameter value
+            } else {
+                console.warn(`Input with id "${key}" not found on the page.`);
+            }
+        });
+    } catch (error) {
+        console.error("An error occurred while applying URL values to inputs:", error);
+    }
+}
+
+function syncColorsToURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+
+    // For each color input, set the URL parameter value
+    document.querySelectorAll('.color').forEach(input => {
+        urlParams.set(input.id, input.value);
+    });
+
+    clearTimeout(this.timeout);
+    // wait a little bit before updating the URL to prevent lag
+    this.timeout = setTimeout(() => {
+        // Update the URL with the new parameters
+        window.history.replaceState({}, '', `${location.pathname}?${urlParams}`);
+    }, 1000);
+}
+
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    applyURLValuesToInputs();
+    
     reloadSkin();
 
     generateOutfit();
+
 
     // Listen for changes in the color inputs
     document.querySelectorAll('.color').forEach(function(input) {
@@ -19,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
             clearTimeout(this.timeout);
             this.timeout = setTimeout(() => {
                 generateOutfit();
+                syncColorsToURL();
             }
             , 10);
 
