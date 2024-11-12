@@ -15,10 +15,18 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.color').forEach(function(input) {
         console.log(input);
         input.addEventListener('input', function() {
-            generateOutfit();
+            // wait a little bit before generating the outfit to prevent lag, and a oneshot to prevent multiple calls
+            clearTimeout(this.timeout);
+            this.timeout = setTimeout(() => {
+                generateOutfit();
+            }
+            , 10);
+
         });
     });
 });
+
+const imageCache = {};
 
 // Generate a image by layering the skin parts from the folder layers and save it to the texture element
 function generateOutfit() {
@@ -71,39 +79,49 @@ function generateOutfit() {
 
     function loadImage(part) {
         return new Promise((resolve, reject) => {
-            var img = new Image();
-            img.src = 'layers/' + part + '.png';
-            img.onload = function() {
-                // Fetch color and return the image, color, and part as an object
-                let color;
-                try {
-                    color = document.getElementById(part).value;
-                } catch (error) {
-                    color = '#ffffff'; // Default color when no input is found
-                }
-                resolve({ img, color, part });
-            };
-            img.onerror = function() {
-                console.error("Failed to load image:", img.src);
-                reject(img.src); // Reject the promise if loading fails
-            };
+            // Check if the image is already cached
+            if (imageCache[part]) {
+                resolve({ img: imageCache[part], part });
+            } else {
+                // Load image from server and store in cache
+                var img = new Image();
+                img.src = 'layers/' + part + '.png';
+                img.onload = function() {
+                    // Cache the loaded image
+                    imageCache[part] = img;
+                    resolve({ img, part });
+                };
+                img.onerror = function() {
+                    console.error("Failed to load image:", img.src);
+                    reject(img.src);
+                };
+            }
         });
     }
 
     // Load all images, then draw them in sequence
-    Promise.all(skinParts.map(part => loadImage(part)))
-        .then(images => {
-            // All images are loaded, now draw them in the specified order
-            images.forEach(({ img, color, part }) => {
-                drawLayeredImage(img, color, part);
-            });
-            // Update the texture after all layers are drawn
-            texture.src = mainCanvas.toDataURL();
-            reloadSkin();
-        })
-        .catch(error => {
-            console.error("An error occurred while loading images:", error);
+    Promise.all(skinParts.map(part => loadImage(part).then(({ img, part }) => {
+        // Get the color value
+        let color;
+        try {
+            color = document.getElementById(part).value;
+        } catch (error) {
+            color = '#ffffff'; // Default color if element not found
+        }
+        return { img, color, part };
+    })))
+    .then(images => {
+        // All images are loaded, now draw them in the specified order
+        images.forEach(({ img, color, part }) => {
+            drawLayeredImage(img, color, part);
         });
+        // Update the texture after all layers are drawn
+        texture.src = mainCanvas.toDataURL();
+        reloadSkin();
+    })
+    .catch(error => {
+        console.error("An error occurred while loading images:", error);
+    });
 }
 
 // Clamp the color to a minimum value for better visibility
