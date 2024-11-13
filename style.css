@@ -1,8 +1,20 @@
+  body {
+    /* background-image: url(img/pepernoten.webp);
+    background-size: cover;
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat; */
+    background-color: #010006;
+    color: #ffffff;
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
   #kledingkast {
     width: 30%;
-    padding: 15px;
+    padding: 10px;
     border-radius: 15px;
     margin: 10px;
+    background: linear-gradient(315deg, #b36b00, #e9b34ce8);
+    color: #000000;
   }
 
   input[type="color"] {
@@ -71,14 +83,12 @@
     width: fit-content;
     height: 27rem;
     padding-inline: 7rem;
-    margin: 4rem;
     background: linear-gradient(45deg, #df8600 0%, #ff0c00ce 50%, #871111 100%);
     border-radius: 15px;
     position: relative;
     align-items: center;
     justify-content: center;
     display: inline-flex;
-    margin-inline: 3rem;
     perspective: 75px;
     perspective-origin: 50% calc(50% - 250px);
     pointer-events: none;
@@ -110,6 +120,8 @@
     align-content: center;
     justify-content: center;
     padding: 2rem;
+    align-items: center;
+    gap: 35px;
     > .container3d {
       scale: 1.25;
     }

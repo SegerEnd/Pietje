@@ -203,7 +203,7 @@ function clampColor(color, min = 7) {
     if (b > 230) {
         b = 230;
     }
-
+    
     if (r < min && g < min && b < min) {
         return `#${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}`;
     }
