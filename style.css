@@ -1,5 +1,47 @@
-:root {
-    --skin: url(http://textures.minecraft.net/texture/49d96c8ecbf77433cb88a70176496c472e1c06f5832d83aa6169e8e9f5c1553f); /* Default skin */
+  #kledingkast {
+    width: 30%;
+    padding: 15px;
+    border-radius: 15px;
+    margin: 10px;
+  }
+
+  input[type="color"] {
+    background: transparent;
+    border-radius: 7px;
+    padding: 0.25px 0.8px;
+    cursor: pointer;
+  }
+
+  input[type="checkbox"] {
+    cursor: pointer;
+    transform: scale(1.5);
+    margin-left: 10px;
+  }
+
+  button.reset {
+    cursor: pointer;
+    margin-left: 10px;
+  }
+
+  label.kleding_label {
+    display: block;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    cursor: pointer;
+  }
+
+  input#download {
+    cursor: pointer;
+    display: block;
+    margin-top: 1rem;
+  }
+
+  .kleding_check {
+    display: block;
+    margin-top: 0.5rem;
+  }
+  .kleding_check label {
+    cursor: pointer;
   }
 
   .display-box::before {
@@ -30,9 +72,8 @@
     height: 27rem;
     padding-inline: 7rem;
     margin: 4rem;
-    background: linear-gradient(45deg, #df8600 0%, #ff0c00ce 50%, #730000 100%);
+    background: linear-gradient(45deg, #df8600 0%, #ff0c00ce 50%, #871111 100%);
     border-radius: 15px;
-    outline: rgba(255, 255, 255, 0.589) 3px solid;
     position: relative;
     align-items: center;
     justify-content: center;
@@ -61,7 +102,7 @@
   }
   .container1 {
     max-width: 90vw;
-    width: fit-content;
+    width: auto;
     height: fit-content;
     display: flex;
     flex-wrap: wrap;

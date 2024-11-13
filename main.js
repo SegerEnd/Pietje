@@ -74,6 +74,17 @@ document.addEventListener('DOMContentLoaded', function() {
             , 10);
 
         });
+
+        // Place after the color input a button to reset the color back to the default value
+        var resetButton = document.createElement('button');
+        resetButton.textContent = 'Reset';
+        resetButton.classList.add('reset');
+        input.parentNode.insertBefore(resetButton, input.nextSibling);
+        resetButton.addEventListener('click', function() {
+            input.value = input.defaultValue;
+            generateOutfit();
+            syncColorsToURL();
+        });
     });
 });
 
@@ -82,7 +93,7 @@ const imageCache = {};
 // Generate a image by layering the skin parts from the folder layers and save it to the texture element
 function generateOutfit() {
     // Define the parts and other variables
-    var skinParts = ['color_maillot', 'color_skin', 'color_hair', 'color_eyes', 'color_primary', 'color_secondary', 'top'];
+    var skinParts = ['color_maillot', 'color_skin', 'color_hair', 'color_eyes', 'color_primary', 'color_secondary', 'color_shoes', 'top'];
     var texture = document.getElementById('texture');
 
     // Main canvas setup
@@ -176,11 +187,22 @@ function generateOutfit() {
 }
 
 // Clamp the color to a minimum value for better visibility
-function clampColor(color, min = 5) {
+function clampColor(color, min = 7) {
     // Convert hex color to RGB components
     let r = parseInt(color.slice(1, 3), 16);
     let g = parseInt(color.slice(3, 5), 16);
     let b = parseInt(color.slice(5, 7), 16);
+
+    // limit the colors above 230 for better results
+    if (r > 230) {
+        r = 230;
+    }
+    if (g > 230) {
+        g = 230;
+    }
+    if (b > 230) {
+        b = 230;
+    }
 
     if (r < min && g < min && b < min) {
         return `#${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}${min.toString(16).padStart(2, '0')}`;
