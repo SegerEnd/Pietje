@@ -50,6 +50,17 @@ document.addEventListener('DOMContentLoaded', function() {
     generateOutfit();
 
 
+    document.getElementById('download').addEventListener('click', function(event) {
+        event.preventDefault();
+
+        var texture = document.getElementById('texture');
+        var link = document.createElement('a');
+        link.download = 'pietje.png';
+        link.href = texture.src;
+        link.click();
+    });
+
+
     // Listen for changes in the color inputs
     document.querySelectorAll('.color').forEach(function(input) {
         console.log(input);

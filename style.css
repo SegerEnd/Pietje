@@ -30,12 +30,7 @@
     height: 27rem;
     padding-inline: 7rem;
     margin: 4rem;
-    background: linear-gradient(
-      45deg,
-      transparent 0%,
-      #00b7ffce 50%,
-      transparent 100%
-    );
+    background: linear-gradient(45deg, #df8600 0%, #ff0c00ce 50%, #730000 100%);
     border-radius: 15px;
     outline: rgba(255, 255, 255, 0.589) 3px solid;
     position: relative;
@@ -120,25 +115,6 @@
       background: rgb(100, 30, 97);
       color: #e6d7d7;
     }
-  }
-  #ErrorDiv {
-    background-color: rgb(192, 82, 82);
-    background: linear-gradient(
-      -30deg,
-      transparent 0%,
-      #8a290c 50%,
-      transparent 100%
-    );
-    max-width: 27ch;
-    height: fit-content;
-    text-align: center;
-    margin: 1rem auto;
-    padding: 1rem;
-    opacity: 0;
-    outline: 5px solid rgb(90, 27, 27);
-    outline-offset: -4px;
-    transition: 0.5s;
-    display: none;
   }
   .scene div div {
     image-rendering: pixelated;
