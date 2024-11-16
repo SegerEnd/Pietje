@@ -1,8 +1,6 @@
 // Reload the skin in the CSS variable
 function reloadSkin() {
-    var texture = document.getElementById('texture');
-
-    document.documentElement.style.setProperty('--skin', 'url(' + texture.src + ')');
+    document.documentElement.style.setProperty('--skin', 'url(' + document.getElementById('texture').src + ')');
 }
 
 function applyURLValuesToInputs() {
@@ -63,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Listen for changes in the color inputs
     document.querySelectorAll('.color').forEach(function(input) {
-        console.log(input);
         input.addEventListener('input', function() {
             // wait a little bit before generating the outfit to prevent lag, and a oneshot to prevent multiple calls
             clearTimeout(this.timeout);
@@ -80,7 +77,8 @@ document.addEventListener('DOMContentLoaded', function() {
         resetButton.textContent = 'Reset';
         resetButton.classList.add('reset');
         input.parentNode.insertBefore(resetButton, input.nextSibling);
-        resetButton.addEventListener('click', function() {
+        resetButton.addEventListener('click', function(event) {
+            event.preventDefault();
             input.value = input.defaultValue;
             generateOutfit();
             syncColorsToURL();
