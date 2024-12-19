@@ -86,8 +86,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-const imageCache = {};
-
 // Generate a image by layering the skin parts from the folder layers and save it to the texture element
 function generateOutfit() {
     // Define the parts and other variables
@@ -139,26 +137,38 @@ function generateOutfit() {
 
     function loadImage(part) {
         return new Promise((resolve, reject) => {
-            // Check if the image is already cached
-            if (imageCache[part]) {
-                resolve({ img: imageCache[part], part });
+            // Check if the image is already in localStorage
+            const cachedImage = localStorage.getItem(`imageCache_${part}`);
+            if (cachedImage) {
+                const img = new Image();
+                img.src = cachedImage; // Load image from Base64 string
+                resolve({ img, part });
             } else {
-                // Load image from server and store in cache
-                var img = new Image();
+                // Load image from server and store in localStorage
+                const img = new Image();
                 img.src = 'layers/' + part + '.png';
-                img.onload = function() {
-                    // Cache the loaded image
-                    imageCache[part] = img;
+                img.onload = function () {
+                    // Convert image to Base64 string and store in localStorage
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    try {
+                        const dataURL = canvas.toDataURL(); // Convert to Base64
+                        localStorage.setItem(`imageCache_${part}`, dataURL);
+                    } catch (e) {
+                        console.warn('LocalStorage quota exceeded, cannot cache image.', e);
+                    }
                     resolve({ img, part });
                 };
-                img.onerror = function() {
+                img.onerror = function () {
                     console.error("Failed to load image:", img.src);
                     reject(img.src);
                 };
             }
         });
     }
-
     // Load all images, then draw them in sequence
     Promise.all(skinParts.map(part => loadImage(part).then(({ img, part }) => {
         // Get the color value
