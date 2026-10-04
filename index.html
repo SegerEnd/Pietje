@@ -1,94 +1,235 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pietje - Minecraft outfit samenstellen</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="main.js"></script>
-</head>
-<body>
-    <header>
-        <p>Pietje</p>
-    </header>
-    <h1>Pietje's outfit<h1>
-    <h2>Stel hier je outfit samen</h2>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minecraft Piet skin maken voor Sinterklaas · Pietje</title>
+<meta name="description" content="Maak je eigen Minecraft Piet skin voor Sinterklaas: kies de kleuren van het pak, de maillot, het haar en meer, draai hem rond in 3D en download de skin. Gratis, in je browser.">
+<link rel="canonical" href="https://segerend.nl/pietje/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://segerend.nl/pietje/">
+<meta property="og:title" content="Minecraft Piet skin maken voor Sinterklaas · Pietje">
+<meta property="og:description" content="Maak je eigen Minecraft Piet skin voor Sinterklaas: kies de kleuren, draai hem rond in 3D en download de skin.">
+<meta property="og:image" content="https://segerend.nl/pietje/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Drie Minecraft Pieten, in een groen, een rood en een roze pak, naast de tekst: Minecraft Piet skin maken, voor Sinterklaas.">
+<meta name="twitter:card" content="summary_large_image">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Pietje","url":"https://segerend.nl/pietje/","inLanguage":"nl","description":"Maak je eigen Minecraft Piet skin voor Sinterklaas en download hem.","applicationCategory":"GameApplication","operatingSystem":"Alle (webbrowser)","isAccessibleForFree":true,"image":"https://segerend.nl/pietje/og.png","screenshot":"https://segerend.nl/pietje/piet.png","author":{"@type":"Person","name":"Seger","url":"https://segerend.nl/"}}</script>
+<!-- standalone page only (the site drops these): the site's stylesheet, for its colors, layout,
+     footer, focus rings and .button; its script, for the clicks of the controls (data-clicks); and
+     room where the site's header would be -->
+<link rel="stylesheet" href="https://segerend.nl/style.css" data-standalone>
+<script src="https://segerend.nl/site.js" defer data-standalone></script>
+<style data-standalone>
+  main.pietje { padding-top: 2rem; }
+  body > footer { display: block; }
+</style>
+<style>
+  /* the app: everything scoped to .pietje, so it can live inside the site (segerend.nl) */
+  /* as the site's style.css has them; here too, so the page doesn't lean on that file's version */
+  .pietje [hidden] { display: none !important; }
+  .pietje .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  :root { --app-width: 56rem; /* 54rem of content plus padding; the site sizes its footer to it too */ }
+  /* at the top level: inside .pietje { } (a style rule) browsers ignore these */
+  @property --mx { syntax: "<length>"; inherits: false; initial-value: 0px; }
+  @property --my { syntax: "<length>"; inherits: false; initial-value: 0px; }
+  @keyframes march { to { stroke-dashoffset: -14; } }
+  .pietje {
+  width: min(100%, var(--app-width)); padding-inline: 1rem; font: 15px/1.5 var(--font-ui);
+  h1 { margin: 0 0 .3rem; }
+  .intro { margin: 0 0 1.5rem; color: var(--muted); }
+  .maker { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 20rem); gap: 1.5rem; align-items: start; }
+  @media (max-width: 44rem) { .maker { grid-template-columns: 1fr; } }
+  /* quick taps (Willekeurig, a few times) aren't a double tap to zoom on iOS; pinching still zooms */
+  .maker { touch-action: manipulation; }
 
-    <img id="texture" src="img/roze_pietje.png" alt="Minecraft texture van Pietje" style="display: none;">
-    
-    <div class="container1">
-        <form id="kledingkast">
-            <b>Kies een kleur:</b>
-            <label class="kleding_label" for="color_primary">Eerste kleur van het pak:</label>
-            <input type="color" id="color_primary" name="color_primary" value="#FF3D3D" class="color">
-            <label class="kleding_label" for="color_secondary">Tweede kleur van het pak:</label>
-            <input type="color" id="color_secondary" name="color_secondary" value="#CC0000" class="color">
-            <label class="kleding_label" for="color_maillot">Kleur van de maillot:</label>
-            <input type="color" id="color_maillot" name="color_maillot" value="#EDAC44" class="color">
-            <label class="kleding_label" for="color_shoes">Kleur van de schoenen:</label>
-            <input type="color" id="color_shoes" name="color_shoes" value="#E8E8E8" class="color">
-            <label class="kleding_label" for="color_skin">Kleur van de huid:</label>
-            <input type="color" id="color_skin" name="color_skin" value="#EBCCB2" class="color">
-            <label class="kleding_label" for="color_hair">Kleur van het haar:</label>
-            <input type="color" id="color_hair" name="color_hair" value="#663114" class="color">
-            <label class="kleding_label" for="color_eyes">Kleur van de ogen:</label>
-            <input type="color" id="color_eyes" name="color_eyes" value="#5FC8FC" class="color">
+  /* the 3D preview: drag (or the arrow keys) to turn and tilt it; it turns by itself when left alone.
+     A drag on it doesn't scroll the page (touch-action), as up and down tilt it. */
+  .viewer { position: relative; display: grid; place-items: center; height: 26rem; border-radius: 14px; overflow: hidden; cursor: grab; touch-action: none;
+    background: radial-gradient(circle at 50% 35%, light-dark(#fff3e0, #3a2418), transparent 70%), var(--code-bg); user-select: none; }
+  .viewer:active { cursor: grabbing; }
+  /* the picture of a Piet: what's there before the script draws, or without it (and for search engines) */
+  .poster { position: absolute; inset: 0; width: auto; height: 100%; margin: auto; }
+  .model { position: absolute; inset: 0; width: 100%; height: 100%; }  /* drawn with WebGL, see pietje.mjs */
+  .hint { position: absolute; bottom: .6rem; margin: 0; color: var(--muted); font-size: 12px; }
+  .flat { cursor: default; } .flat .hint { display: none; }  /* no WebGL: a flat front view that doesn't turn */
 
-            <div class="kleding_check">
-                <label for="roetveeg">Roetvegen</label>
-                <input type="checkbox" id="roetveeg" name="roetveeg" value="roetveeg">
-            </div>
-        
-            <input type="submit" value="Download Skin van Pietje" id="download">
-        </form>
-    
-        <div class="container3d">
-            <div class="scene" data="url">
-            <div class="head">
-                <div id="head-front"></div>
-                <div id="head-back"></div>
-                <div id="head-left"></div>
-                <div id="head-right"></div>
-                <div id="head-top"></div>
-                <div id="head-bottom"></div>
-            </div>
-            <div class="body">
-                <div id="body-front"></div>
-                <div id="body-back"></div>
-                <div id="body-left"></div>
-                <div id="body-right"></div>
-                <div id="body-bottom"></div>
-            </div>
-            <div class="slim left-slim-arm">
-                <div id="left-slim-arm-front"></div>
-                <div id="left-slim-arm-back"></div>
-                <div id="left-slim-arm-left"></div>
-                <div id="left-slim-arm-top"></div>
-                <div id="left-slim-arm-bottom"></div>
-            </div>
-            <div class="slim right-slim-arm">
-                <div id="right-slim-arm-front"></div>
-                <div id="right-slim-arm-back"></div>
-                <div id="right-slim-arm-right"></div>
-                <div id="right-slim-arm-top"></div>
-                <div id="right-slim-arm-bottom"></div>
-            </div>
-            <div class="left-leg">
-                <div id="left-leg-front"></div>
-                <div id="left-leg-back"></div>
-                <div id="left-leg-left"></div>
-                <div id="left-leg-top"></div>
-                <div id="left-leg-bottom"></div>
-            </div>
-            <div class="right-leg">
-                <div id="right-leg-front"></div>
-                <div id="right-leg-back"></div>
-                <div id="right-leg-right"></div>
-                <div id="right-leg-top"></div>
-                <div id="right-leg-bottom"></div>
-            </div>
-            </div>
-        </div>
+  /* the wardrobe: a color per part */
+  .colors { display: grid; gap: .15rem; margin: 0; padding: 0; border: 0; }
+  .colors legend { margin-bottom: .4rem; font-weight: 600; }
+  .color { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .3rem 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .color input, .lips input[type=color] { width: 2.6rem; height: 2rem; padding: 0; border: 1px solid var(--control-border); border-radius: 8px; background: none; cursor: pointer; }
+  .color input::-webkit-color-swatch-wrapper, .lips input::-webkit-color-swatch-wrapper { padding: 3px; }
+  .color input::-webkit-color-swatch, .lips input::-webkit-color-swatch { border: 0; border-radius: 5px; }
+  .color input::-moz-color-swatch, .lips input::-moz-color-swatch { border: 0; border-radius: 5px; }
+  .extra { display: grid; gap: .15rem; margin: .15rem 0 0; padding: 0; border: 0; }  /* the colors' list goes on: spaced as they are */
+  .extra label { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+  .extra input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--link); }
+  /* your own head: a skin file from the button, or dropped on the preview */
+  /* a row as the ones below it: what it is on the left (your face, once it's there), the buttons on
+     the right; × takes your head off again */
+  .own { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
+  .own .what, .own .do { display: flex; align-items: center; gap: .5rem; }
+  #ownface { display: none; width: 1.1rem; height: 1.1rem; border-radius: 3px; image-rendering: pixelated; }
+  .own[data-state="mine"] #ownface { display: block; }
+  .own[data-state="wrong"] #ownnote { color: var(--muted); }  /* a hint, not an error: nobody did anything wrong */
+  #ownclear { padding-inline: .45rem; }
+  .own:has(:focus-visible) label { outline: 2px solid var(--focus); outline-offset: 2px; }
+  /* a skin dragged over the window: the preview says it takes it, more so while it's right over it;
+     in the site's own controls: the label a .button, filled as .button.primary right over the
+     preview, the frame dashed as a drop zone, marching in the link blue (the site's hover) right
+     over it. It moves as the site's header does: the header's softer spring for size and place,
+     0.3s for colors, and a glow that glides after the file, as the header's shine follows the
+     pointer (pietje.mjs sets --mx and --my). With reduced motion things only fade. */
+  .drop { --spring: cubic-bezier(0.34, 1.4, 0.64, 1); position: absolute; inset: .5rem; display: grid; align-content: end; justify-items: center; padding-bottom: 1.25rem;
+    opacity: 0; scale: 1.015; pointer-events: none; transition: opacity .3s ease, scale .5s var(--spring); }
+  .glow { position: absolute; inset: 0; border-radius: 8px; opacity: 0; transition: opacity .4s ease, --mx .12s linear, --my .12s linear;
+    background: radial-gradient(180px circle at var(--mx) var(--my), var(--glass-specular, #ffffffe6), transparent 70%); }
+  .frame { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .frame rect { x: 1px; y: 1px; width: calc(100% - 2px); height: calc(100% - 2px); rx: 8px; fill: none; stroke: var(--control-border, #949494); stroke-width: 2; stroke-dasharray: 8 6;
+    transition: stroke .3s ease; animation: march 1.2s linear infinite paused; }
+  .drop span { position: relative; display: flex; align-items: center; gap: .4rem; padding: .3rem .9rem; overflow: hidden; white-space: nowrap; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--text); font-weight: 600; translate: 0 .75rem;
+    transition: translate .55s var(--spring), scale .4s var(--spring), background-color .3s ease, color .3s ease, border-color .3s ease; }
+  .drop span svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .dragging .drop, .took .drop, .refused .drop { opacity: 1; scale: 1; }
+  .dragging .drop span, .took .drop span, .refused .drop span { translate: 0 0; }
+  .over .glow { opacity: .8; }
+  .over .frame rect { stroke: var(--link, #0969da); animation-play-state: running; }
+  .over .drop span, .took .drop span { border-color: var(--heading); background: var(--heading); color: var(--bg); }
+  .over .drop span { scale: 1.06; }
+  /* a file that isn't a skin: calm, as before a drop, with a hint (no red: nobody did anything wrong) */
+  .wrong .frame rect, .refused .frame rect { stroke: var(--control-border, #949494); animation-play-state: paused; }
+  .wrong .drop span, .refused .drop span { border-color: var(--line); background: var(--bg); color: var(--muted); scale: 1; }
+  .wrong .glow { opacity: 0; }
+  .took .frame rect { stroke: var(--heading); }
+  /* Pietje leans in while a skin is right over him */
+  .model { transition: scale .55s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .over:not(.wrong) .model { scale: 1.04; }
+  @media (prefers-reduced-motion: reduce) {
+    .drop, .drop span, .model, .button, .color input, .soot .button, .lips input[type=color], #ownclear { transition: opacity .3s, background-color .3s, color .3s, border-color .3s; scale: none !important; translate: none !important; }
+    .frame rect { animation: none; }
+    .glow { display: none; }
+  }
+  .drop b { font-weight: inherit; }
+  .dragging .hint, .took .hint, .refused .hint { visibility: hidden; }
+  .soot, .lips { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
+  /* the extras as rows of the same list as the colors: the same line under each */
+  .own, .soot, .lips { box-sizing: content-box; padding: .3rem 0; border-bottom: 1px solid var(--line); }  /* 2rem inside, as a color's swatch */
+  .button.small { padding-block: .15rem; font-size: 13px; }
+  .soot:not(:has(:checked)) .button { display: none; }  /* only while there are roetvegen */
+  .lips:not(:has(:checked)) input[type=color] { display: none; }  /* only while there's lipstick */
+  /* those, and Weg, spring in when they appear (and fade out), as the header's links grow */
+  .soot .button, .lips input[type=color], #ownclear {
+    transition: opacity .3s ease, scale .45s cubic-bezier(0.34, 1.4, 0.64, 1), border-color .15s, color .15s, display .3s allow-discrete;
+    @starting-style { opacity: 0; scale: .6; }
+  }
+  .soot:not(:has(:checked)) .button, .lips:not(:has(:checked)) input[type=color] { opacity: 0; scale: .6; }
+  .presets { display: flex; flex-wrap: wrap; gap: .4rem; margin: 0 0 1.25rem; }  /* on top: on a phone right under the preview */
+  .actions { display: grid; gap: .5rem; margin: 1.25rem 0 0; }
+  .actions .row { display: flex; gap: .5rem; }
+  .actions .row .button { flex: 1; }
+  /* buttons with an icon (Lucide, ISC license) or, for an example, a dot in its suit's two colors */
+  .button { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; white-space: nowrap; }
+  /* every button presses in, as the site's primary one does, and springs back when let go; a color
+     swatch grows a little under the pointer */
+  .button { transition: border-color .15s, color .15s, opacity .15s, scale .4s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .button:active { scale: .96; transition-duration: .15s, .15s, .15s, .08s; }
+  .button.primary:active { transform: none; }  /* the site's own press, so it isn't pressed twice */
+  .color input { transition: scale .4s cubic-bezier(0.34, 1.4, 0.64, 1); }
+  .color:hover input { scale: 1.08; }
+  .button svg { flex: none; width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #share[data-copied] { border-color: var(--success); color: var(--success); }
+  .swatch { flex: none; width: .85rem; height: .85rem; border: 1px solid var(--control-border); border-radius: 50%; background: linear-gradient(135deg, var(--a) 50%, var(--b) 50%); }
+
+  /* help */
+  .about { max-width: 42rem; margin-top: 2.5rem; }
+  .about h2 { font-size: 1.1rem; }
+  .about h3 { margin: 1.2rem 0 .3rem; font-size: 15px; }
+  .about p, .about ol { margin: 0 0 .8rem; color: var(--muted); }
+  .about li { margin-bottom: .2rem; }
+  }
+</style>
+<script type="module" src="pietje.mjs"></script>
+<body class="app">
+<main class="pietje">
+<h1>Minecraft Piet skin maken</h1>
+<p class="intro">Kies de kleuren van je Piet voor Sinterklaas, draai hem rond en download de skin voor Minecraft.</p>
+
+<div class="maker" data-clicks>
+  <div class="viewer" id="viewer" tabindex="0" role="img" aria-label="3D-voorbeeld van je Piet. Sleep, of gebruik de pijltjestoetsen, om hem te draaien; klik en scroll, knijp, of gebruik plus en min, om te zoomen.">
+    <img class="poster" id="poster" src="piet.png" width="560" height="832" alt="Een Minecraft Piet skin: een Piet in een groen pak met roze, een witte kraag en een gouden maillot.">
+    <canvas class="model" id="model"></canvas>
+    <p class="hint" aria-hidden="true">sleep om te draaien</p>
+    <div class="drop" id="drop" aria-hidden="true"><div class="glow"></div><svg class="frame"><rect/></svg><span><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h2v2H8zM14 10h2v2h-2zM10 16h4"/></svg><b>Sleep je skin hierheen</b></span></div>
+  </div>
+
+  <form id="wardrobe">
+    <div class="presets" role="group" aria-label="Voorbeelden">
+      <button type="button" class="button" data-preset="rood"><span class="swatch" aria-hidden="true"></span>Rood</button>
+      <button type="button" class="button" data-preset="roze"><span class="swatch" aria-hidden="true"></span>Roze</button>
+      <button type="button" class="button" data-preset="groen"><span class="swatch" aria-hidden="true"></span>Groen</button>
+      <button type="button" class="button" id="random"><svg viewBox="0 0 24 24" aria-hidden="true"><rect width="12" height="12" x="2" y="10" rx="2" ry="2"/><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6"/><path d="M6 18h.01"/><path d="M10 14h.01"/><path d="M15 6h.01"/><path d="M18 9h.01"/></svg>Willekeurig</button>
     </div>
-</body>
-</html>
+    <fieldset class="colors">
+      <legend>Kleuren</legend>
+      <label class="color">Pak <input type="color" id="color_primary" value="#ff3d3d"></label>
+      <label class="color">Pak, tweede kleur <input type="color" id="color_secondary" value="#cc0000"></label>
+      <label class="color">Maillot <input type="color" id="color_maillot" value="#edac44"></label>
+      <label class="color">Schoenen <input type="color" id="color_shoes" value="#e8e8e8"></label>
+      <label class="color">Huid <input type="color" id="color_skin" value="#ebccb2"></label>
+      <label class="color">Haar <input type="color" id="color_hair" value="#1e1d15"></label>
+      <label class="color">Ogen <input type="color" id="color_eyes" value="#5fc8fc"></label>
+    </fieldset>
+    <fieldset class="extra">
+      <legend class="visually-hidden">Extra</legend>
+      <div class="own" id="own">
+        <span class="what"><canvas id="ownface" width="8" height="8" aria-hidden="true"></canvas><span id="ownnote" aria-live="polite">Eigen hoofd</span></span>
+        <span class="do">
+          <input type="file" id="ownskin" class="visually-hidden" accept="image/png">
+          <label class="button small" id="ownpick" for="ownskin"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h2v2H8zM14 10h2v2h-2zM10 16h4"/></svg><span>Kies skin</span></label>
+          <button type="button" class="button small" id="ownclear" aria-label="Eigen hoofd weghalen" title="Eigen hoofd weghalen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+        </span>
+      </div>
+      <div class="soot">
+        <label><input type="checkbox" id="roetveeg"> Roetvegen</label>
+        <button type="button" class="button small" id="reshuffle"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m18 14 4 4-4 4"/><path d="m18 2 4 4-4 4"/><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-7.6a4 4 0 0 1 3.3-1.7H22"/><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2"/><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45"/></svg>Andere vegen</button>
+      </div>
+      <div class="lips">
+        <label><input type="checkbox" id="lippenstift"> Lippenstift</label>
+        <input type="color" id="color_lips" value="#a3294f" aria-label="Kleur van de lippenstift">
+      </div>
+    </fieldset>
+    <div class="actions">
+      <button type="button" class="button primary" id="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download skin</button>
+      <div class="row">
+        <button type="button" class="button" id="share" data-done="Link gekopieerd"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><span>Link kopiëren</span></button>
+        <button type="reset" class="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>Opnieuw</button>
+      </div>
+    </div>
+  </form>
+</div>
+
+<section class="about">
+<h2>Zo zet je hem in Minecraft</h2>
+<h3>Java Edition</h3>
+<ol>
+  <li>Download de skin hierboven (pietje.png).</li>
+  <li>Open de Minecraft Launcher, ga naar <b>Skins</b> en kies <b>Nieuwe skin</b>.</li>
+  <li>Kies het model <b>Klassiek</b> (de armen van Pietje zijn 4 pixels breed, zoals bij Steve) en selecteer pietje.png.</li>
+</ol>
+<h3>Bedrock Edition</h3>
+<ol>
+  <li>Ga naar de <b>Kleedkamer</b> en open de klassieke skins.</li>
+  <li>Kies onder <b>Eigen</b> de lege skin, dan <b>Kies nieuwe skin</b>, en selecteer pietje.png.</li>
+  <li>Kies het klassieke model met de brede armen, zoals bij Steve.</li>
+</ol>
+<h3>Kan ik mijn Piet delen?</h3>
+<p>Ja: de kleuren staan in de link. Met <b>Link kopiëren</b> kan iemand anders precies jouw Piet openen.</p>
+<h3>Werkt het op mijn telefoon?</h3>
+<p>Ja, alles gebeurt in je browser. Er wordt niets geüpload.</p>
+<h3>Kan ik mijn eigen hoofd gebruiken?</h3>
+<p>Ja: kies <b>Eigen hoofd</b>, of sleep je Minecraft-skin op het voorbeeld. Pietje krijgt dan jouw gezicht en haar, met de Pietenmuts erop. Je skin blijft op je eigen apparaat, en staat dus ook niet in de link.</p>
+</section>
+</main>
+<footer>gemaakt door Seger · <a href="https://github.com/SegerEnd/Pietje" target="_blank" rel="noopener">GitHub</a> · <a href="https://ko-fi.com/seger" target="_blank" rel="noopener">Trakteer me op koffie<svg class="kofi" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M11.4 2.7q-4 0-6.9.3C2.1 3.3 0 5.2 0 8.6c0 3.5.2 6.1 1.6 8.5a8 8 0 0 0 7.6 4.2h.9c4.2 0 6.5-2.2 7.6-4l1.1-2.4c3-.2 5.2-2.7 5.2-5.7v-.4q-.1-5.1-5.8-5.9zm0 2 6.5.1q4 .5 4.2 4v.4c0 2.2-1.8 3.9-4 3.9h-.9l-.1.6q-.4 1.4-1 2.6c-1 1.4-2.6 3-6 3h-.8c-2.5 0-4.8-.8-6-3.2-1.1-2-1.4-4.1-1.4-7.5Q2 5.4 5 5q2.3-.2 6.5-.2m6.5 2.2q-.6 0-.7.6v3q0 .4.7.5 2-.1 2-2c0-2-.7-2-2-2M7.5 7c-1.8 0-3 1.5-3 3.2q.2 2.3 2 3.9L9 16a2 2 0 0 0 1.5 0c.8-.5 2-1.2 2.6-2q1.8-1.5 2-3.8a3 3 0 0 0-3-3.2q-1.6.1-2.4 1.3a3 3 0 0 0-2.3-1.3"/></svg></a></footer>

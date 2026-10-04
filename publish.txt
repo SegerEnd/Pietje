@@ -1,0 +1,7 @@
+# Files the site (segerend.nl) publishes for Pietje; everything else stays private.
+index.html
+pietje.mjs
+skin.png
+parts.png
+piet.png
+og.png
