@@ -48,11 +48,21 @@
   .viewer { position: relative; display: grid; place-items: center; height: 26rem; border-radius: 14px; overflow: hidden; cursor: grab; touch-action: none;
     background: radial-gradient(circle at 50% 35%, light-dark(#fff3e0, #3a2418), transparent 70%), var(--code-bg); user-select: none; }
   .viewer:active { cursor: grabbing; }
+  /* a drag turns Pietje, so it selects nothing: Safari (iOS too) only knows user-select with its
+     prefix; no callout to save the picture on a long press, no grey flash on a tap, and the poster
+     isn't dragged off as an image */
+  .viewer { -webkit-user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+  .viewer img, .viewer canvas { -webkit-user-drag: none; }
   /* the picture of a Piet: what's there before the script draws, or without it (and for search engines) */
   .poster { position: absolute; inset: 0; width: auto; height: 100%; margin: auto; }
   .model { position: absolute; inset: 0; width: 100%; height: 100%; }  /* drawn with WebGL, see pietje.mjs */
   .hint { position: absolute; bottom: .6rem; margin: 0; color: var(--muted); font-size: 12px; }
   .flat { cursor: default; } .flat .hint { display: none; }  /* no WebGL: a flat front view that doesn't turn */
+  /* on a phone, where the colors come under the preview: smaller, so the palette fits on the
+     screen with it and each color you pick shows on Pietje right away */
+  @media (max-width: 44rem) {
+    .viewer { height: min(26rem, 42svh); }
+  }
 
   /* the wardrobe: a color per part */
   .colors { display: grid; gap: .15rem; margin: 0; padding: 0; border: 0; }
@@ -62,6 +72,18 @@
   .color input::-webkit-color-swatch-wrapper, .lips input::-webkit-color-swatch-wrapper { padding: 3px; }
   .color input::-webkit-color-swatch, .lips input::-webkit-color-swatch { border: 0; border-radius: 5px; }
   .color input::-moz-color-swatch, .lips input::-moz-color-swatch { border: 0; border-radius: 5px; }
+  /* on a phone the colors as a palette: a tile per part, its name under it, four to a row, so
+     they take two rows instead of seven */
+  @media (max-width: 44rem) {
+    .colors { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem .5rem; }
+    .colors legend { margin-bottom: .6rem; }
+    .color { flex-direction: column; justify-content: flex-start; gap: .3rem; padding: 0; border: 0;
+      color: var(--muted); font-size: 12px; line-height: 1.25; text-align: center; }
+    .color input { order: -1; width: 100%; height: 2.25rem; border-radius: 9px; }  /* the tile above its name */
+    .color input::-webkit-color-swatch { border-radius: 6px; }
+    .color input::-moz-color-swatch { border-radius: 6px; }
+    .color:hover input { scale: none; }
+  }
   .extra { display: grid; gap: .15rem; margin: .15rem 0 0; padding: 0; border: 0; }  /* the colors' list goes on: spaced as they are */
   .extra label { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
   .extra input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--link); }
@@ -113,9 +135,9 @@
   }
   .drop b { font-weight: inherit; }
   .dragging .hint, .took .hint, .refused .hint { visibility: hidden; }
-  .soot, .lips { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
+  .soot, .lips, .arms { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
   /* the extras as rows of the same list as the colors: the same line under each */
-  .own, .soot, .lips { box-sizing: content-box; padding: .3rem 0; border-bottom: 1px solid var(--line); }  /* 2rem inside, as a color's swatch */
+  .own, .soot, .lips, .arms { box-sizing: content-box; padding: .3rem 0; border-bottom: 1px solid var(--line); }  /* 2rem inside, as a color's swatch */
   .button.small { padding-block: .15rem; font-size: 13px; }
   .soot:not(:has(:checked)) .button { display: none; }  /* only while there are roetvegen */
   .lips:not(:has(:checked)) input[type=color] { display: none; }  /* only while there's lipstick */
@@ -158,7 +180,7 @@
 
 <div class="maker" data-clicks>
   <div class="viewer" id="viewer" tabindex="0" role="img" aria-label="3D-voorbeeld van je Piet. Sleep, of gebruik de pijltjestoetsen, om hem te draaien; klik en scroll, knijp, of gebruik plus en min, om te zoomen.">
-    <img class="poster" id="poster" src="piet.png" width="560" height="832" alt="Een Minecraft Piet skin: een Piet in een groen pak met roze, een witte kraag en een gouden maillot.">
+    <img class="poster" id="poster" src="piet.png" draggable="false" width="560" height="832" alt="Een Minecraft Piet skin: een Piet in een groen pak met roze, een witte kraag en een gouden maillot.">
     <canvas class="model" id="model"></canvas>
     <p class="hint" aria-hidden="true">sleep om te draaien</p>
     <div class="drop" id="drop" aria-hidden="true"><div class="glow"></div><svg class="frame"><rect/></svg><span><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h2v2H8zM14 10h2v2h-2zM10 16h4"/></svg><b>Sleep je skin hierheen</b></span></div>
@@ -199,6 +221,9 @@
         <label><input type="checkbox" id="lippenstift"> Lippenstift</label>
         <input type="color" id="color_lips" value="#a3294f" aria-label="Kleur van de lippenstift">
       </div>
+      <div class="arms">
+        <label><input type="checkbox" id="slank"> Slanke armen (Alex)</label>
+      </div>
     </fieldset>
     <div class="actions">
       <button type="button" class="button primary" id="download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>Download skin</button>
@@ -216,13 +241,13 @@
 <ol>
   <li>Download de skin hierboven (pietje.png).</li>
   <li>Open de Minecraft Launcher, ga naar <b>Skins</b> en kies <b>Nieuwe skin</b>.</li>
-  <li>Kies het model <b>Klassiek</b> (de armen van Pietje zijn 4 pixels breed, zoals bij Steve) en selecteer pietje.png.</li>
+  <li>Kies het model <b>Klassiek</b> (armen van 4 pixels, zoals bij Steve), of <b>Slank</b> als je <b>Slanke armen</b> aan hebt gezet, en selecteer pietje.png.</li>
 </ol>
 <h3>Bedrock Edition</h3>
 <ol>
   <li>Ga naar de <b>Kleedkamer</b> en open de klassieke skins.</li>
   <li>Kies onder <b>Eigen</b> de lege skin, dan <b>Kies nieuwe skin</b>, en selecteer pietje.png.</li>
-  <li>Kies het klassieke model met de brede armen, zoals bij Steve.</li>
+  <li>Kies het klassieke model met de brede armen, zoals bij Steve, of het model met de slanke armen als je <b>Slanke armen</b> aan hebt gezet.</li>
 </ol>
 <h3>Kan ik mijn Piet delen?</h3>
 <p>Ja: de kleuren staan in de link. Met <b>Link kopiëren</b> kan iemand anders precies jouw Piet openen.</p>

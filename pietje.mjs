@@ -13,7 +13,7 @@
 // make recolorable sprites: clean in every color, without the specks a pixel-by-pixel shift gave.
 
 const $ = (id) => document.getElementById(id);
-const form = $("wardrobe"), viewer = $("viewer"), model = $("model"), soot = $("roetveeg"), lipstick = $("lippenstift");
+const form = $("wardrobe"), viewer = $("viewer"), model = $("model"), soot = $("roetveeg"), lipstick = $("lippenstift"), slim = $("slank");
 const colors = [...form.querySelectorAll("input[type=color]")];
 
 // ---- the skin ------------------------------------------------------------------
@@ -62,9 +62,10 @@ for (const [id, name] of PARTS_BY_ID.entries()) {
   const x = own.reduce((t, [, c, h]) => t + Math.cos(h * Math.PI / 180) * c, 0), y = own.reduce((t, [, c, h]) => t + Math.sin(h * Math.PI / 180) * c, 0);
   base[name] = [middle(own.map(([l]) => l)), middle(own.map(([, c]) => c)), (Math.atan2(y, x) * 180 / Math.PI + 360) % 360];
 }
-// the defaults (Opnieuw goes back to them): the original's colors, with the suit of the Groen example and dark hair
-const START = { color_primary: "#74b900", color_secondary: "#ec448c", color_hair: "#1e1d15", color_lips: "#a3294f" };
+// the defaults (Opnieuw and the Groen example go back to them): the original's colors, with a green suit, dark hair and roetvegen
+const START = { color_primary: "#74b900", color_secondary: "#ec448c", color_hair: "#1e1d15", color_lips: "#a3294f", roetveeg: true };
 for (const input of colors) input.value = input.defaultValue = START[input.id] ?? hex(...rgb(...base[input.id]));
+soot.checked = soot.defaultChecked = START.roetveeg;
 
 // A level's color: the picked color, lighter or darker by its level's step from the base in the
 // original, a little narrowed (0.7: the original's steps made specks on bright colors), and the
@@ -121,6 +122,19 @@ let sootSeed = 1;
 // picked color in the middle, the corners a little darker. Whether it's on is in the link.
 const LIPS = [[11, 15, 0], [12, 15, 0], [10, 15, -0.1], [13, 15, -0.1]];  // x, y, lightness step
 
+// Slanke armen (Alex): 3 pixels wide. Each 4-wide face of an arm loses a middle column on its outer side.
+const ARMS = [[40, 16, 1], [40, 32, 1], [32, 48, 2], [48, 48, 2]];  // inner and outer layer of the right and left arm, the column dropped
+function slimArms(data) {
+  const without = (cols, i) => cols.filter((_, k) => k != i);
+  for (const [u, v, drop] of ARMS) for (let y = v; y < v + 16; y++) {
+    const row = Array.from({ length: 16 }, (_, x) => data.slice((y * 64 + u + x) * 4, (y * 64 + u + x + 1) * 4));
+    const cols = y < v + 4
+      ? [...row.slice(0, 4), ...without(row.slice(4, 8), drop), ...without(row.slice(8, 12), drop)]  // top, bottom
+      : [...row.slice(0, 4), ...without(row.slice(4, 8), drop), ...row.slice(8, 12), ...without(row.slice(12, 16), 3 - drop)];  // sides, front, back
+    for (let x = 0; x < 16; x++) data.set(cols[x] ?? [0, 0, 0, 0], (y * 64 + u + x) * 4);
+  }
+}
+
 // Your own head: the head (its inner layer, x 0 to 31, y 0 to 15) of a skin you pick or drop, in
 // place of Pietje's; the Piet hat (the outer layer) stays on it, without the bit of Pietje's hair
 // that's in that layer too (over the forehead and the side). It only lives in this page: it isn't
@@ -172,14 +186,15 @@ $("ownclear").onclick = () => {
 // reduced motion): the label grows or shrinks to its new text instead of jumping, the text rolls
 // in, and a glow glides after the file over the preview, as the header's shine follows the pointer.
 const glow = $("drop").querySelector(".glow"), label = $("drop").querySelector("span"), dropText = label.querySelector("b");
-let dragDepth = 0, afterDrop;
+let dragDepth = 0, afterDrop, resize;
 const hasFile = (e) => e.dataTransfer?.types.includes("Files");
 function say(text) {
   if (dropText.textContent == text) return;
   const from = label.offsetWidth;
+  resize?.cancel();  // else the new width is measured mid-animation, too narrow for the text
   dropText.textContent = text;
   if (still.matches) return;
-  label.animate({ width: [`${from}px`, `${label.offsetWidth}px`] }, { duration: 450, easing: SPRING });
+  resize = label.animate({ width: [`${from}px`, `${label.offsetWidth}px`] }, { duration: 450, easing: SPRING });
   rollIn(dropText);
 }
 function follow(e) {
@@ -225,6 +240,7 @@ addEventListener("drop", async (e) => {
   afterDrop = setTimeout(() => viewer.classList.remove("took", "refused"), took ? 1100 : 1800);
 });
 
+let armsShown;
 function render() {
   const out = ctx.createImageData(64, 64), picked = {}, ramp = new Map();
   for (const input of colors) picked[input.id] = oklch(...[1, 3, 5].map((i) => parseInt(input.value.slice(i, i + 2), 16)));
@@ -241,6 +257,8 @@ function render() {
   }
   if (soot.checked) for (const [x, y, keep] of sootPattern(sootSeed)) for (let c = 0; c < 3; c++) out.data[(y * 64 + x) * 4 + c] *= keep;
   if (lipstick.checked) for (const [x, y, step] of LIPS) out.data.set(rgb(Math.max(0, picked.color_lips[0] + step), picked.color_lips[1], picked.color_lips[2]), (y * 64 + x) * 4);
+  if (slim.checked) slimArms(out.data);
+  if (armsShown !== slim.checked) view.arms(armsShown = slim.checked);
   ctx.putImageData(out, 0, 0);
   view.upload(skin);
   view.draw(turn, tilt, zoom);
@@ -250,45 +268,47 @@ function render() {
 
 // Drawn with WebGL: its depth buffer decides per pixel what's in front, which CSS 3D can't (at
 // steep angles it sorted the faces wrong). Every part is a box: its size in skin pixels, its center,
-// and where its inner and outer layer start on the skin (Minecraft's 64x64 layout, classic 4 pixel
-// arms, as Steve). The outer layer (the hat, the sleeves) is a little bigger, as in Minecraft, by a
+// and where its inner and outer layer start on the skin (Minecraft's 64x64 layout; arms 4 pixels
+// wide as Steve's, or 3 as Alex's). The outer layer (the hat, the sleeves) is a little bigger, as in Minecraft, by a
 // different amount per part: where parts meet, the same amount would put their outer faces in one
 // plane, and they'd flicker into each other (z-fighting).
-const PARTS = [
-  //  w  h  d    x    y   inner     outer     outer layer, out by
-  [8, 8, 8, 0, -10, [0, 0], [32, 0], 0.5],      // head
-  [8, 12, 4, 0, 0, [16, 16], [16, 32], 0.25],   // body
-  [4, 12, 4, -6, 0, [40, 16], [40, 32], 0.3],    // right arm
-  [4, 12, 4, 6, 0, [32, 48], [48, 48], 0.3],     // left arm
-  [4, 12, 4, -2, 12, [0, 16], [0, 32], 0.2],    // right leg
-  [4, 12, 4, 2, 12, [16, 48], [0, 48], 0.22],   // left leg
-];
-
-// Each face as 2 triangles: position (y up), place on the skin (0 to 1), a light level (top
-// brightest and bottom darkest, as in Minecraft, so the shape reads) and whether it's the inner
-// layer, which is opaque, as in Minecraft: only the outer layer has see-through pixels.
-const vertices = [];
-let solid;
-function face(corners, u, v, w, h, light) {
-  const uv = [[u, v], [u + w, v], [u + w, v + h], [u, v + h]].map(([a, b]) => [a / 64, b / 64]);
-  for (const i of [0, 3, 2, 0, 2, 1]) vertices.push(...corners[i], ...uv[i], light, solid);  // counterclockwise from outside
-}
-for (const [w, h, d, x, y, inner, outer, out] of PARTS) {
-  for (const [[u, v], o] of [[inner, 0], [outer, out]]) {
-    solid = o ? 0 : 1;
-    const X = w / 2 + o, Y = h / 2 + o, Z = d / 2 + o, cy = 2 - y;  // y up, the figure centered
-    const p = (sx, sy, sz) => [x + sx * X, cy + sy * Y, sz * Z];
-    face([p(-1, 1, 1), p(1, 1, 1), p(1, -1, 1), p(-1, -1, 1)], u + d, v + d, w, h, 0.9);                 // front
-    face([p(1, 1, -1), p(-1, 1, -1), p(-1, -1, -1), p(1, -1, -1)], u + 2 * d + w, v + d, w, h, 0.9);     // back
-    face([p(-1, 1, -1), p(-1, 1, 1), p(-1, -1, 1), p(-1, -1, -1)], u, v + d, d, h, 0.75);                // its right
-    face([p(1, 1, 1), p(1, 1, -1), p(1, -1, -1), p(1, -1, 1)], u + d + w, v + d, d, h, 0.75);           // its left
-    face([p(-1, 1, -1), p(1, 1, -1), p(1, 1, 1), p(-1, 1, 1)], u + d, v, w, d, 1);                      // top
-    face([p(-1, -1, 1), p(1, -1, 1), p(1, -1, -1), p(-1, -1, -1)], u + d + w, v, w, d, 0.6);            // bottom
+function shape(slim) {
+  const a = slim ? 3 : 4, ax = 4 + a / 2;
+  const parts = [
+    //  w  h  d    x    y   inner     outer     outer layer, out by
+    [8, 8, 8, 0, -10, [0, 0], [32, 0], 0.5],      // head
+    [8, 12, 4, 0, 0, [16, 16], [16, 32], 0.25],   // body
+    [a, 12, 4, -ax, 0, [40, 16], [40, 32], 0.3],  // right arm
+    [a, 12, 4, ax, 0, [32, 48], [48, 48], 0.3],   // left arm
+    [4, 12, 4, -2, 12, [0, 16], [0, 32], 0.2],    // right leg
+    [4, 12, 4, 2, 12, [16, 48], [0, 48], 0.22],   // left leg
+  ];
+  // Each face as 2 triangles: position (y up), place on the skin (0 to 1), a light level (top
+  // brightest and bottom darkest, as in Minecraft, so the shape reads) and whether it's the inner
+  // layer, which is opaque, as in Minecraft: only the outer layer has see-through pixels.
+  const vertices = [];
+  for (const [w, h, d, x, y, inner, outer, out] of parts) {
+    for (const [[u, v], o] of [[inner, 0], [outer, out]]) {
+      const solid = o ? 0 : 1;
+      const face = (corners, u, v, w, h, light) => {
+        const uv = [[u, v], [u + w, v], [u + w, v + h], [u, v + h]].map(([a, b]) => [a / 64, b / 64]);
+        for (const i of [0, 3, 2, 0, 2, 1]) vertices.push(...corners[i], ...uv[i], light, solid);  // counterclockwise from outside
+      };
+      const X = w / 2 + o, Y = h / 2 + o, Z = d / 2 + o, cy = 2 - y;  // y up, the figure centered
+      const p = (sx, sy, sz) => [x + sx * X, cy + sy * Y, sz * Z];
+      face([p(-1, 1, 1), p(1, 1, 1), p(1, -1, 1), p(-1, -1, 1)], u + d, v + d, w, h, 0.9);                 // front
+      face([p(1, 1, -1), p(-1, 1, -1), p(-1, -1, -1), p(1, -1, -1)], u + 2 * d + w, v + d, w, h, 0.9);     // back
+      face([p(-1, 1, -1), p(-1, 1, 1), p(-1, -1, 1), p(-1, -1, -1)], u, v + d, d, h, 0.75);                // its right
+      face([p(1, 1, 1), p(1, 1, -1), p(1, -1, -1), p(1, -1, 1)], u + d + w, v + d, d, h, 0.75);           // its left
+      face([p(-1, 1, -1), p(1, 1, -1), p(1, 1, 1), p(-1, 1, 1)], u + d, v, w, d, 1);                      // top
+      face([p(-1, -1, 1), p(1, -1, 1), p(1, -1, -1), p(-1, -1, -1)], u + d + w, v, w, d, 0.6);            // bottom
+    }
   }
+  return vertices;
 }
 
 // The view: WebGL when the browser has it; else a flat front view, so the rest still works.
-// Both: upload(skin) after a change, draw(turn, tilt) on every frame.
+// Both: upload(skin) after a change, arms(slim) when the arms change, draw(turn, tilt) on every frame.
 const view = webgl() ?? flat();
 $("poster").hidden = true;  // the model draws itself now, in front of the picture of it
 
@@ -307,7 +327,7 @@ function webgl() {
   gl.linkProgram(program);
   gl.useProgram(program);
   gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  let count = 0;
   [["position", 3, 0], ["uv", 2, 3], ["light", 1, 5], ["solid", 1, 6]].forEach(([name, size, at]) => {
     const loc = gl.getAttribLocation(program, name);
     gl.enableVertexAttribArray(loc);
@@ -332,13 +352,18 @@ function webgl() {
   }
   return {
     upload(image) { gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image); },
+    arms(slim) {
+      const vertices = shape(slim);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+      count = vertices.length / 7;
+    },
     draw(turn, tilt, zoom) {
       const [w, h] = fit();
       gl.viewport(0, 0, w, h);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
       gl.uniformMatrix4fv(viewAt, false, matrix(turn * Math.PI / 180, tilt * Math.PI / 180, w / h, zoom));
-      gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 7);
+      gl.drawArrays(gl.TRIANGLES, 0, count);
     },
   };
 }
@@ -347,17 +372,20 @@ function webgl() {
 function flat() {
   viewer.classList.add("flat");
   const c = model.getContext("2d");
-  //            inner front    outer front   size   place (left, top) in skin pixels
-  const FRONT = [[[8, 8], [40, 8], 8, 8, -4, -14], [[20, 20], [20, 36], 8, 12, -4, -6], [[44, 20], [44, 36], 4, 12, -8, -6],
-    [[36, 52], [52, 52], 4, 12, 4, -6], [[4, 20], [4, 36], 4, 12, -4, 6], [[20, 52], [4, 52], 4, 12, 0, 6]];
-  let image;
+  let image, front;
   return {
     upload(skin) { image = skin; },
+    arms(slim) {
+      const a = slim ? 3 : 4;
+      //       inner front    outer front   size   place (left, top) in skin pixels
+      front = [[[8, 8], [40, 8], 8, 8, -4, -14], [[20, 20], [20, 36], 8, 12, -4, -6], [[44, 20], [44, 36], a, 12, -4 - a, -6],
+        [[36, 52], [52, 52], a, 12, 4, -6], [[4, 20], [4, 36], 4, 12, -4, 6], [[20, 52], [4, 52], 4, 12, 0, 6]];
+    },
     draw(turn, tilt, zoom) {
       const [w, h] = fit(), p = Math.max(1, Math.floor(h * 0.75 / 32 * zoom));
       c.clearRect(0, 0, w, h);
       c.imageSmoothingEnabled = false;
-      for (const layer of [0, 1]) for (const [inner, outer, fw, fh, x, y] of FRONT) {
+      for (const layer of [0, 1]) for (const [inner, outer, fw, fh, x, y] of front) {
         const [u, v] = layer ? outer : inner;
         c.drawImage(image, u, v, fw, fh, w / 2 + x * p, h / 2 + (y - 2) * p, fw * p, fh * p);
       }
@@ -459,25 +487,28 @@ viewer.addEventListener("keydown", (e) => {
 // The link holds the colors (?color_primary=…), so a Piet can be shared; the names are the ones
 // the first version of Pietje used, so its old links still work.
 const PRESETS = {
-  rood: { color_primary: "#1a0033", color_secondary: "#e60000", color_maillot: "#000000" },
+  rood: { color_primary: "#1a0033", color_secondary: "#e60000", color_maillot: "#000000", color_skin: "#4a2c1d" },
   roze: { color_primary: "#df65a2", color_secondary: "#ffa9fa", color_maillot: "#eeb1ba" },
-  groen: { color_primary: "#74b900", color_secondary: "#ec448c" },  // the start (START above)
+  groen: START,
 };
 
 function fromLink() {
   const params = new URLSearchParams(location.search);
   for (const input of colors) if (/^#[0-9a-f]{6}$/i.test(params.get(input.id) ?? "")) input.value = params.get(input.id);
-  const seed = parseInt(params.get("roetveeg") ?? "", 36);  // its pattern number (1: the designed one)
+  // its pattern number (1: the designed one); missing: on for the plain link, off for older links
+  const seed = params.has("roetveeg") ? parseInt(params.get("roetveeg") ?? "", 36) : params.size ? 0 : 1;
   soot.checked = seed > 0;
   if (seed > 0) sootSeed = seed;
   lipstick.checked = params.has("lippenstift");
+  slim.checked = params.has("slank");
 }
 let linkTimer;
 function toLink() {
   const params = new URLSearchParams();
   for (const input of colors) if (input.value != input.defaultValue) params.set(input.id, input.value);
-  if (soot.checked) params.set("roetveeg", sootSeed.toString(36));
   if (lipstick.checked) params.set("lippenstift", "1");
+  if (slim.checked) params.set("slank", "1");
+  if (soot.checked ? sootSeed != 1 || params.size : !params.size) params.set("roetveeg", soot.checked ? sootSeed.toString(36) : "0");
   clearTimeout(linkTimer);  // not on every step of a color picker drag
   linkTimer = setTimeout(() => history.replaceState(null, "", `${location.pathname}${params.size ? `?${params}` : ""}`), 300);
 }
@@ -511,6 +542,7 @@ function glideTo(targets) {
 form.addEventListener("input", () => { cancelAnimationFrame(glide); changed(); });
 form.addEventListener("reset", () => {  // the form puts the defaults back right after this; glide there from here
   const from = Object.fromEntries(colors.map((input) => [input.id, input.value]));
+  sootSeed = 1;
   setTimeout(() => {
     const to = Object.fromEntries(colors.map((input) => [input.id, input.value]));
     for (const input of colors) input.value = from[input.id];
@@ -523,12 +555,13 @@ for (const button of form.querySelectorAll("[data-preset]")) {
   button.querySelector(".swatch")?.style.setProperty("--b", preset.color_secondary);
   button.onclick = () => {
     const preset = PRESETS[button.dataset.preset];
+    if (preset.roetveeg) { soot.checked = true; sootSeed = 1; }  // the designed pattern
     glideTo(Object.fromEntries(colors.map((input) => [input.id, preset[input.id] ?? input.defaultValue])));
   };
 }
 // Willekeurig: the suit and maillot in any colors; skin, hair and eyes in natural ones (a random
 // color there gives green skin or blue hair); roetvegen or not, lippenstift now and then
-const SKIN = ["#f6d7c3", "#eac1a0", "#d9a982", "#c68a64", "#a86b45", "#8a5232", "#6b3e26", "#4a2c1d"];
+const SKIN = ["#fde8db", "#f4cfc0", "#f6d7c3", "#eac1a0", "#d9a982", "#c68a64", "#a86b45", "#8a5232", "#6b3e26", "#4a2c1d", "#3a2218", "#2b1810"];
 const HAIR = ["#1c1410", "#3b2314", "#663114", "#8a5a2b", "#c99a52", "#e2c27a", "#a8431e", "#9a9a9a"];
 const EYE_COLORS = ["#5fc8fc", "#3a7bd5", "#4caf50", "#7a5230", "#8d6e3f", "#7d8a99"];
 const LIP_COLORS = ["#a3294f", "#c2185b", "#8e2a3a", "#d0506b", "#7a2e4a", "#e07a8a", "#b5651d"];
