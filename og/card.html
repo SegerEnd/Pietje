@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- card.html -- the share card (../og.png, 1200×630): three posed Pieten rendered by Blender
+     (render.py, into pieten.png) with the name and what it does next to them. Not published; to make
+     og.png again, from this folder:
+       blender -b -P render.py -- . pieten.png
+       python3 -m http.server 8131 &
+       "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless --hide-scrollbars \
+         --window-size=1200,630 --virtual-time-budget=4000 --screenshot=../og.png http://localhost:8131/card.html -->
+<html lang="nl">
+<meta charset="utf-8">
+<title>Pietje share card</title>
+<style>
+  :root { color-scheme: light; --font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; color: #2a1a12; font-family: var(--font-ui);
+               background: radial-gradient(ellipse 60% 70% at 75% 60%, #faf2e6, #f4ece4); }
+  img { position: absolute; inset: 0; }
+  h1 { position: absolute; left: 72px; top: 150px; margin: 0; width: 520px; font-size: 76px; font-weight: 800; line-height: 1.02; letter-spacing: -.025em; }
+  p { position: absolute; left: 72px; top: 318px; margin: 0; width: 500px; font-size: 27px; line-height: 1.4; color: #6b5548; }
+  .url { top: auto; bottom: 56px; font: 24px ui-monospace, Menlo, monospace; color: #8c7566; }
+</style>
+<img src="pieten.png" width="1200" height="630" alt="">
+<h1>Minecraft Piet skin maken</h1>
+<p>Voor Sinterklaas: kies de kleuren, draai hem rond in 3D en download de skin.</p>
+<p class="url">segerend.nl/pietje</p>

@@ -1,9 +1,9 @@
 // Pietje: a Minecraft skin of a Piet (Sinterklaas), in the colors you pick, shown on a 3D model
 // drawn with WebGL. The skin is made from two images:
 // - skin.png: the hand-made Pietje (the skin of Seger_Craft in Minecraft), as the color layers made
-//   from it changed it on purpose: no dog's nose, the white details white instead of gray
+//   from it changed it on purpose: no dog's nose, no belt (Riem draws it over it), the white details white instead of gray
 // - parts.png: per pixel its part (red: 1 maillot … 7 shoes, 8 a detail that keeps its color from
-//   skin.png, as the buckle), its shade level (green: 0 darkest to 3 lightest) and that level's
+//   skin.png, as the collar), its shade level (green: 0 darkest to 3 lightest) and that level's
 //   lightness in the original (blue: OKLab L × 255). The levels group the original's pixels by
 //   lightness (the few pixels whose four neighbors all share one other level take it), and the
 //   back of the suit has the front's pattern (it had plain stripes), and the hair has kroeshaar:
@@ -13,7 +13,7 @@
 // make recolorable sprites: clean in every color, without the specks a pixel-by-pixel shift gave.
 
 const $ = (id) => document.getElementById(id);
-const form = $("wardrobe"), viewer = $("viewer"), model = $("model"), soot = $("roetveeg"), lipstick = $("lippenstift"), slim = $("slank");
+const form = $("wardrobe"), viewer = $("viewer"), model = $("model"), soot = $("roetveeg"), lipstick = $("lippenstift"), slim = $("smal"), belt = $("riem");
 const colors = [...form.querySelectorAll("input[type=color]")];
 
 // ---- the skin ------------------------------------------------------------------
@@ -122,7 +122,15 @@ let sootSeed = 1;
 // picked color in the middle, the corners a little darker. Whether it's on is in the link.
 const LIPS = [[11, 15, 0], [12, 15, 0], [10, 15, -0.1], [13, 15, -0.1]];  // x, y, lightness step
 
-// Slanke armen (Alex): 3 pixels wide. Each 4-wide face of an arm loses a middle column on its outer side.
+// Riem: the belt and its buckle as drawn in the original (skin.png and parts.png have the suit under
+// it, the second color a pixel wider where its ends were): on the front of the body, and the
+// buckle's bottom edge on the top row of each leg; o is the buckle's orange, k black. Without it, a
+// darker seam between the suit and the legs: the bottom row of the body, all around. Whether it's
+// off is in the link.
+const BELT = [[21, 29, " oooo "], [21, 30, "kokkok"], [21, 31, "kokkok"], [6, 20, "oo"], [20, 52, "oo"]];  // x, y, its row
+const BELT_COLORS = { o: [250, 157, 15], k: [10, 10, 10] }, SEAM = 0.88;
+
+// Smalle armen (Alex): 3 pixels wide. Each 4-wide face of an arm loses a middle column on its outer side.
 const ARMS = [[40, 16, 1], [40, 32, 1], [32, 48, 2], [48, 48, 2]];  // inner and outer layer of the right and left arm, the column dropped
 function slimArms(data) {
   const without = (cols, i) => cols.filter((_, k) => k != i);
@@ -255,6 +263,8 @@ function render() {
     const from = (y * 32 + x) * 4, to = (y * 64 + x) * 4;
     out.data.set([ownHead[from], ownHead[from + 1], ownHead[from + 2], 255], to);  // the inner layer is opaque
   }
+  if (belt.checked) for (const [x, y, row] of BELT) [...row].forEach((c, k) => c != " " && out.data.set([...BELT_COLORS[c], 255], (y * 64 + x + k) * 4));
+  else for (let x = 16; x < 40; x++) for (let c = 0; c < 3; c++) out.data[(31 * 64 + x) * 4 + c] *= SEAM;  // the seam
   if (soot.checked) for (const [x, y, keep] of sootPattern(sootSeed)) for (let c = 0; c < 3; c++) out.data[(y * 64 + x) * 4 + c] *= keep;
   if (lipstick.checked) for (const [x, y, step] of LIPS) out.data.set(rgb(Math.max(0, picked.color_lips[0] + step), picked.color_lips[1], picked.color_lips[2]), (y * 64 + x) * 4);
   if (slim.checked) slimArms(out.data);
@@ -301,7 +311,7 @@ function shape(slim) {
       face([p(-1, 1, -1), p(-1, 1, 1), p(-1, -1, 1), p(-1, -1, -1)], u, v + d, d, h, 0.75);                // its right
       face([p(1, 1, 1), p(1, 1, -1), p(1, -1, -1), p(1, -1, 1)], u + d + w, v + d, d, h, 0.75);           // its left
       face([p(-1, 1, -1), p(1, 1, -1), p(1, 1, 1), p(-1, 1, 1)], u + d, v, w, d, 1);                      // top
-      face([p(-1, -1, 1), p(1, -1, 1), p(1, -1, -1), p(-1, -1, -1)], u + d + w, v, w, d, 0.6);            // bottom
+      face([p(-1, -1, 1), p(1, -1, 1), p(1, -1, -1), p(-1, -1, -1)], u + d + w, v + d, w, -d, 0.6);       // bottom: its picture upside down, as in Minecraft
     }
   }
   return vertices;
@@ -419,8 +429,23 @@ const show = () => {
   view.draw(turn, tilt, zoom);
 };
 const rest = () => { idleFrom = performance.now() + 2500; };
+// the pause button stops the turning by itself until it's pressed again (on this visit: nothing is
+// stored); dragging and the arrow keys still turn him
+const pause = $("pause");
+let paused = false;
+const showPaused = () => {
+  pause.classList.toggle("paused", paused);
+  pause.lastChild.textContent = paused ? "Draaien" : "Pauze";
+  pause.title = paused ? "Weer laten draaien" : "Stoppen met draaien";
+};
+showPaused();
+pause.addEventListener("click", () => {
+  paused = !paused;
+  showPaused();
+  idleFrom = 0;  // turning on again starts right away, not after a drag's wait
+});
 function spin(now) {
-  if (!still.matches && !picking && now > idleFrom) {
+  if (!still.matches && !picking && !paused && now > idleFrom) {
     turn += (now - last) * 0.02;
     tilt += (TILT - tilt) * Math.min(1, (now - last) * 0.003);
   }
@@ -500,14 +525,16 @@ function fromLink() {
   soot.checked = seed > 0;
   if (seed > 0) sootSeed = seed;
   lipstick.checked = params.has("lippenstift");
-  slim.checked = params.has("slank");
+  slim.checked = params.has("smal");
+  belt.checked = params.get("riem") != "0";
 }
 let linkTimer;
 function toLink() {
   const params = new URLSearchParams();
   for (const input of colors) if (input.value != input.defaultValue) params.set(input.id, input.value);
   if (lipstick.checked) params.set("lippenstift", "1");
-  if (slim.checked) params.set("slank", "1");
+  if (slim.checked) params.set("smal", "1");
+  if (!belt.checked) params.set("riem", "0");
   if (soot.checked ? sootSeed != 1 || params.size : !params.size) params.set("roetveeg", soot.checked ? sootSeed.toString(36) : "0");
   clearTimeout(linkTimer);  // not on every step of a color picker drag
   linkTimer = setTimeout(() => history.replaceState(null, "", `${location.pathname}${params.size ? `?${params}` : ""}`), 300);
@@ -560,14 +587,23 @@ for (const button of form.querySelectorAll("[data-preset]")) {
   };
 }
 // Willekeurig: the suit and maillot in any colors; skin, hair and eyes in natural ones (a random
-// color there gives green skin or blue hair); roetvegen or not, lippenstift now and then
+// color there gives green skin or blue hair); roetvegen or not, lippenstift now and then, mostly a belt
 const SKIN = ["#fde8db", "#f4cfc0", "#f6d7c3", "#eac1a0", "#d9a982", "#c68a64", "#a86b45", "#8a5232", "#6b3e26", "#4a2c1d", "#3a2218", "#2b1810"];
 const HAIR = ["#1c1410", "#3b2314", "#663114", "#8a5a2b", "#c99a52", "#e2c27a", "#a8431e", "#9a9a9a"];
 const EYE_COLORS = ["#5fc8fc", "#3a7bd5", "#4caf50", "#7a5230", "#8d6e3f", "#7d8a99"];
 const LIP_COLORS = ["#a3294f", "#c2185b", "#8e2a3a", "#d0506b", "#7a2e4a", "#e07a8a", "#b5651d"];
 const any = (list) => list[Math.floor(Math.random() * list.length)];
+function contrasting() {
+  const a = Math.random() * 360, b = (a + 160 + Math.random() * 40) % 360, yellow = (h) => Math.cos((h - 100) * Math.PI / 180);
+  const [light, dark] = yellow(a) > yellow(b) ? [a, b] : [b, a];
+  const pair = [hex(...rgb(0.84, 0.16, light)), hex(...rgb(0.5, 0.18, dark))];
+  return Math.random() < 0.5 ? pair : pair.reverse();  // either one the suit's main color
+}
 $("random").onclick = () => {
-  // a suit in a random hue, its second color darker, and the rest in their own random colors
+  // a suit in a random hue, its second color darker; now and then in two contrasting colors instead,
+  // as Pietenpakken often are: across the color wheel (give or take 20°), in OKLCH, one light and
+  // one dark, the one nearer yellow the light one (a dark yellow is olive), so they don't clash;
+  // the rest in their own random colors
   const hue = Math.random() * 360, hsl = (h, s, l) => {
     const f = (n, k = (n + h / 30) % 12) => l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
     return "#" + [f(0), f(8), f(4)].map((c) => Math.round(c * 255).toString(16).padStart(2, "0")).join("");
@@ -575,9 +611,13 @@ $("random").onclick = () => {
   soot.checked = Math.random() < 0.5;  // roetvegen half the time, in a pattern of their own
   sootSeed = 2 + Math.floor(Math.random() * 1e6);
   lipstick.checked = Math.random() < 0.25;  // lippenstift now and then
+  belt.checked = Math.random() < 0.75;  // mostly with a belt
+  const [first, second] = Math.random() < 0.35 ? contrasting() : [hsl(hue, 0.8, 0.6), hsl(hue, 0.85, 0.4)];
+  // the maillot now and then black or white, as many are (a fixed lightness never gives either)
+  const tights = Math.random(), maillot = tights < 0.2 ? "#1a1a1a" : tights < 0.35 ? "#f2f2f2" : hsl(Math.random() * 360, 0.75, 0.6);
   glideTo({
-    color_primary: hsl(hue, 0.8, 0.6), color_secondary: hsl(hue, 0.85, 0.4),
-    color_maillot: hsl(Math.random() * 360, 0.75, 0.6), color_shoes: hsl(Math.random() * 360, 0.3, 0.85),
+    color_primary: first, color_secondary: second,
+    color_maillot: maillot, color_shoes: hsl(Math.random() * 360, 0.3, 0.85),
     color_skin: any(SKIN), color_hair: any(HAIR), color_eyes: any(EYE_COLORS), color_lips: any(LIP_COLORS),
   });
 };

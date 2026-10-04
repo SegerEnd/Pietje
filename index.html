@@ -56,8 +56,23 @@
   /* the picture of a Piet: what's there before the script draws, or without it (and for search engines) */
   .poster { position: absolute; inset: 0; width: auto; height: 100%; margin: auto; }
   .model { position: absolute; inset: 0; width: 100%; height: 100%; }  /* drawn with WebGL, see pietje.mjs */
-  .hint { position: absolute; bottom: .6rem; margin: 0; color: var(--muted); font-size: 12px; }
+  .hint { position: absolute; bottom: .75rem; margin: 0; color: var(--muted); font-size: 12px; line-height: 26px; }  /* as tall as the pause button next to it, so their words line up */
   .flat { cursor: default; } .flat .hint { display: none; }  /* no WebGL: a flat front view that doesn't turn */
+  /* stops (and restarts) the turning by itself, in the preview's top right corner; not there when
+     he doesn't turn by himself anyway: no WebGL, or less motion asked for */
+  .stage { position: relative; }
+  /* a small button as the others (Kies skin), level with the hint; filled, so it reads on the preview */
+  .button.pause { position: absolute; right: .75rem; bottom: .75rem; background: var(--bg); }  /* level with the hint */
+  /* its icons are Lucide's, as the other buttons': refresh-cw-off to stop the turning, refresh-cw to start it */
+  .pause:not(.paused) .go, .pause.paused .stop { display: none; }
+  .stage:has(.flat) .pause { display: none; }
+  @media (prefers-reduced-motion: reduce) { .pause { display: none; } }
+  /* side by side: a little taller than on its own (32rem), so less of the column next to it is
+     left empty below it, but not all of it: Pietje would get too big. No taller than the window,
+     so all of him stays in view, and 26rem at least */
+  @media (width > 44rem) {
+    .viewer { height: min(32rem, max(26rem, 100svh - 7rem)); }
+  }
   /* on a phone, where the colors come under the preview: smaller, so the palette fits on the
      screen with it and each color you pick shows on Pietje right away */
   @media (max-width: 44rem) {
@@ -86,6 +101,7 @@
   }
   .extra { display: grid; gap: .15rem; margin: .15rem 0 0; padding: 0; border: 0; }  /* the colors' list goes on: spaced as they are */
   .extra label { display: flex; align-items: center; gap: .5rem; cursor: pointer; }
+  label { -webkit-user-select: none; user-select: none; }  /* clicking twice toggles, it doesn't select the text */
   .extra input { width: 1.1rem; height: 1.1rem; margin: 0; accent-color: var(--link); }
   /* your own head: a skin file from the button, or dropped on the preview */
   /* a row as the ones below it: what it is on the left (your face, once it's there), the buttons on
@@ -135,9 +151,9 @@
   }
   .drop b { font-weight: inherit; }
   .dragging .hint, .took .hint, .refused .hint { visibility: hidden; }
-  .soot, .lips, .arms { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
+  .soot, .lips, .arms, .belt { display: flex; align-items: center; justify-content: space-between; gap: .5rem; min-height: 2rem; }
   /* the extras as rows of the same list as the colors: the same line under each */
-  .own, .soot, .lips, .arms { box-sizing: content-box; padding: .3rem 0; border-bottom: 1px solid var(--line); }  /* 2rem inside, as a color's swatch */
+  .own, .soot, .lips, .arms, .belt { box-sizing: content-box; padding: .3rem 0; border-bottom: 1px solid var(--line); }  /* 2rem inside, as a color's swatch */
   .button.small { padding-block: .15rem; font-size: 13px; }
   .soot:not(:has(:checked)) .button { display: none; }  /* only while there are roetvegen */
   .lips:not(:has(:checked)) input[type=color] { display: none; }  /* only while there's lipstick */
@@ -179,11 +195,15 @@
 <p class="intro">Kies de kleuren van je Piet voor Sinterklaas, draai hem rond en download de skin voor Minecraft.</p>
 
 <div class="maker" data-clicks>
+  <div class="stage">
   <div class="viewer" id="viewer" tabindex="0" role="img" aria-label="3D-voorbeeld van je Piet. Sleep, of gebruik de pijltjestoetsen, om hem te draaien; klik en scroll, knijp, of gebruik plus en min, om te zoomen.">
     <img class="poster" id="poster" src="piet.png" draggable="false" width="560" height="832" alt="Een Minecraft Piet skin: een Piet in een groen pak met roze, een witte kraag en een gouden maillot.">
     <canvas class="model" id="model"></canvas>
     <p class="hint" aria-hidden="true">sleep om te draaien</p>
     <div class="drop" id="drop" aria-hidden="true"><div class="glow"></div><svg class="frame"><rect/></svg><span><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 10h2v2H8zM14 10h2v2h-2zM10 16h4"/></svg><b>Sleep je skin hierheen</b></span></div>
+  </div>
+  <!-- outside the viewer: it's an image to screen readers, which would hide a button in it -->
+  <button type="button" class="button small pause" id="pause" title="Stoppen met draaien"><svg class="stop" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8L18.74 5.74A9.75 9.75 0 0 0 12 3C11 3 10.03 3.16 9.13 3.47"/><path d="M8 16H3v5"/><path d="M3 12C3 9.51 4 7.26 5.64 5.64"/><path d="m3 16 2.26 2.26A9.75 9.75 0 0 0 12 21c2.49 0 4.74-1 6.36-2.64"/><path d="M21 12c0 1-.16 1.97-.47 2.87"/><path d="M21 3v5h-5"/><path d="M22 22 2 2"/></svg><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg><span>Pauze</span></button>
   </div>
 
   <form id="wardrobe">
@@ -221,8 +241,11 @@
         <label><input type="checkbox" id="lippenstift"> Lippenstift</label>
         <input type="color" id="color_lips" value="#a3294f" aria-label="Kleur van de lippenstift">
       </div>
+      <div class="belt">
+        <label><input type="checkbox" id="riem" checked> Riem</label>
+      </div>
       <div class="arms">
-        <label><input type="checkbox" id="slank"> Slanke armen (Alex)</label>
+        <label><input type="checkbox" id="smal"> Smalle armen (Alex)</label>
       </div>
     </fieldset>
     <div class="actions">
@@ -241,13 +264,13 @@
 <ol>
   <li>Download de skin hierboven (pietje.png).</li>
   <li>Open de Minecraft Launcher, ga naar <b>Skins</b> en kies <b>Nieuwe skin</b>.</li>
-  <li>Kies het model <b>Klassiek</b> (armen van 4 pixels, zoals bij Steve), of <b>Slank</b> als je <b>Slanke armen</b> aan hebt gezet, en selecteer pietje.png.</li>
+  <li>Kies het model <b>Klassiek</b> (armen van 4 pixels, zoals bij Steve), of <b>Smal</b> als je <b>Smalle armen</b> aan hebt gezet, en selecteer pietje.png.</li>
 </ol>
 <h3>Bedrock Edition</h3>
 <ol>
   <li>Ga naar de <b>Kleedkamer</b> en open de klassieke skins.</li>
   <li>Kies onder <b>Eigen</b> de lege skin, dan <b>Kies nieuwe skin</b>, en selecteer pietje.png.</li>
-  <li>Kies het klassieke model met de brede armen, zoals bij Steve, of het model met de slanke armen als je <b>Slanke armen</b> aan hebt gezet.</li>
+  <li>Kies <b>Brede armen</b>, zoals bij Steve, of <b>Smalle armen</b> als je die hier aan hebt gezet.</li>
 </ol>
 <h3>Kan ik mijn Piet delen?</h3>
 <p>Ja: de kleuren staan in de link. Met <b>Link kopiëren</b> kan iemand anders precies jouw Piet openen.</p>
